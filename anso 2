@@ -1,0 +1,251 @@
+local Player = game.Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = Player:GetMouse()
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+-- CONFIGURAÇÕES
+local Settings = {
+    Aimbot = false,
+    StrongLock = false,
+    ESP = false,
+    BoxESP = false,
+    Wallcheck = false,
+    FOV_Enabled = false,
+    FOV_Size = 100,
+    TargetPart = "Head",
+    TeamCheck = true,
+    BoxColor = Color3.fromRGB(138, 43, 226),
+    Aimbot_Power = 0.7,
+    StrongLock_Power = 0.25
+}
+
+local PlayerData = {}
+
+-- FUNÇÃO DRAGGABLE
+local function MakeDraggable(gui)
+    local dragging, dragInput, dragStart, startPos
+    gui.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = gui.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
+            end)
+        end
+    end)
+    gui.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragInput then
+            local delta = dragInput.Position - dragStart
+            gui.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+end
+
+-- INTERFACE
+local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+ScreenGui.ResetOnSpawn = false
+
+local OpenBtn = Instance.new("TextButton", ScreenGui)
+OpenBtn.Size = UDim2.new(0, 60, 0, 60)
+OpenBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+OpenBtn.Text = "Z"
+OpenBtn.TextColor3 = Color3.fromRGB(138, 43, 226)
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextSize = 30
+Instance.new("UICorner", OpenBtn).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", OpenBtn).Color = Color3.fromRGB(138, 43, 226)
+MakeDraggable(OpenBtn)
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 300, 0, 420)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -210)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.Visible = false
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 15)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(138, 43, 226)
+MakeDraggable(MainFrame)
+
+-- TÍTULO: ZELDRIS HUB
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "ZELDRIS HUB"
+Title.TextColor3 = Color3.fromRGB(138, 43, 226)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
+Title.BackgroundTransparency = 1
+
+-- CRÉDITOS: wndd7_
+local Credits = Instance.new("TextLabel", MainFrame)
+Credits.Size = UDim2.new(1, 0, 0, 20)
+Credits.Position = UDim2.new(0, 0, 1, -25)
+Credits.Text = "wndd7_"
+Credits.TextColor3 = Color3.fromRGB(100, 100, 100)
+Credits.Font = Enum.Font.Gotham
+Credits.TextSize = 12
+Credits.BackgroundTransparency = 1
+
+OpenBtn.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
+
+local Scroll = Instance.new("ScrollingFrame", MainFrame)
+Scroll.Size = UDim2.new(1, -20, 1, -120) -- Ajustado para caber o crédito
+Scroll.Position = UDim2.new(0, 10, 0, 50)
+Scroll.BackgroundTransparency = 1
+Scroll.CanvasSize = UDim2.new(0, 0, 3.2, 0)
+Scroll.ScrollBarThickness = 2
+local Layout = Instance.new("UIListLayout", Scroll)
+Layout.Padding = UDim.new(0, 8)
+Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+-- FUNÇÃO DESENHO
+local function CreateESP(target)
+    local drawing = {
+        T = Drawing.new("Line"), B = Drawing.new("Line"), L = Drawing.new("Line"), R = Drawing.new("Line"),
+        Info = Drawing.new("Text")
+    }
+    for k, l in pairs(drawing) do 
+        if k ~= "Info" then l.Thickness = 2; l.Color = Settings.BoxColor; l.Visible = false
+        else l.Size = 16; l.Center = true; l.Outline = true; l.Color = Color3.new(1,1,1); l.Visible = false end
+    end
+    PlayerData[target] = drawing
+    return drawing
+end
+
+local function CreateToggle(name, settingKey)
+    local btn = Instance.new("TextButton", Scroll)
+    btn.Size = UDim2.new(0, 260, 0, 35)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+    local function up()
+        btn.Text = name .. (Settings[settingKey] and ": ON" or ": OFF")
+        btn.TextColor3 = Settings[settingKey] and Color3.fromRGB(138, 43, 226) or Color3.new(1, 1, 1)
+    end
+    btn.MouseButton1Click:Connect(function() Settings[settingKey] = not Settings[settingKey]; up() end)
+    up()
+end
+
+CreateToggle("Aimbot", "Aimbot")
+CreateToggle("Strong Lock", "StrongLock")
+CreateToggle("ESP Nomes", "ESP")
+CreateToggle("ESP Box", "BoxESP")
+CreateToggle("Team Check", "TeamCheck")
+CreateToggle("Wallcheck", "Wallcheck")
+CreateToggle("Mostrar FOV", "FOV_Enabled")
+
+-- SLIDER DE FOV
+local SliderFrame = Instance.new("Frame", Scroll)
+SliderFrame.Size = UDim2.new(0, 260, 0, 45); SliderFrame.BackgroundTransparency = 1
+local SliderLabel = Instance.new("TextLabel", SliderFrame)
+SliderLabel.Size = UDim2.new(1, 0, 0, 20); SliderLabel.Text = "Raio FOV: 100"; SliderLabel.TextColor3 = Color3.new(1, 1, 1); SliderLabel.BackgroundTransparency = 1
+local SliderBack = Instance.new("Frame", SliderFrame)
+SliderBack.Size = UDim2.new(0.9, 0, 0, 6); SliderBack.Position = UDim2.new(0.05, 0, 0.7, 0); SliderBack.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+local SliderFill = Instance.new("Frame", SliderBack)
+SliderFill.Size = UDim2.new(0.16, 0, 1, 0); SliderFill.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+
+SliderBack.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local move; move = RunService.RenderStepped:Connect(function()
+            if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                local p = math.clamp((Mouse.X - SliderBack.AbsolutePosition.X) / SliderBack.AbsoluteSize.X, 0, 1)
+                SliderFill.Size = UDim2.new(p, 0, 1, 0)
+                Settings.FOV_Size = math.floor(p * 600)
+                SliderLabel.Text = "Raio FOV: " .. Settings.FOV_Size
+            else move:Disconnect() end
+        end)
+    end
+end)
+
+-- LOGICA AUXILIAR
+local function IsEnemy(v)
+    if not Settings.TeamCheck then return true end
+    return v.Team ~= Player.Team or v.TeamColor ~= Player.TeamColor
+end
+
+local function IsNotBlocked(target, char)
+    if not Settings.Wallcheck then return true end
+    local castPoints = {Camera.CFrame.Position, target.Position}
+    local ignoreList = {Player.Character, char}
+    local parts = Camera:GetPartsObscuringTarget(castPoints, ignoreList)
+    return #parts == 0
+end
+
+-- LÓGICA DE ALVO COM LIMITE ESTRITO DE FOV
+local function GetClosest()
+    local target, closest = nil, (Settings.FOV_Enabled and Settings.FOV_Size or 2000)
+    
+    for _, v in pairs(game.Players:GetPlayers()) do
+        if v ~= Player and IsEnemy(v) and v.Character and v.Character:FindFirstChild(Settings.TargetPart) then
+            local char = v.Character
+            if char:FindFirstChild("Humanoid") and char.Humanoid.Health <= 0 then continue end
+            
+            local part = char[Settings.TargetPart]
+            local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+            
+            if onScreen then
+                local mag = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
+                
+                if mag < closest then
+                    if IsNotBlocked(part, char) then
+                        target = part
+                        closest = mag 
+                    end
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- LOOP PRINCIPAL
+local FOVCircle = Drawing.new("Circle")
+
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Visible = Settings.FOV_Enabled
+    FOVCircle.Radius = Settings.FOV_Size
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    FOVCircle.Thickness = 1.5
+    FOVCircle.Color = Color3.fromRGB(138, 43, 226)
+
+    local target = GetClosest()
+    if target and (Settings.Aimbot or Settings.StrongLock) then
+        local finalPower = Settings.Aimbot and Settings.Aimbot_Power or Settings.StrongLock_Power
+        Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), finalPower)
+    end
+
+    for _, v in pairs(game.Players:GetPlayers()) do
+        local data = PlayerData[v] or CreateESP(v)
+        local char = v.Character
+        if v ~= Player and char and char:FindFirstChild("HumanoidRootPart") and IsEnemy(v) and char.Humanoid.Health > 0 then
+            local pos, vis = Camera:WorldToViewportPoint(char.HumanoidRootPart.Position)
+            if vis then
+                local s = (1 / pos.Z) * 1000
+                local w, h = 2.5 * s, 4.5 * s
+                data.T.Visible = Settings.BoxESP; data.B.Visible = Settings.BoxESP
+                data.L.Visible = Settings.BoxESP; data.R.Visible = Settings.BoxESP
+                if Settings.BoxESP then
+                    data.T.From = Vector2.new(pos.X - w/2, pos.Y - h/2); data.T.To = Vector2.new(pos.X + w/2, pos.Y - h/2)
+                    data.B.From = Vector2.new(pos.X - w/2, pos.Y + h/2); data.B.To = Vector2.new(pos.X + w/2, pos.Y + h/2)
+                    data.L.From = Vector2.new(pos.X - w/2, pos.Y - h/2); data.L.To = Vector2.new(pos.X - w/2, pos.Y + h/2)
+                    data.R.From = Vector2.new(pos.X + w/2, pos.Y - h/2); data.R.To = Vector2.new(pos.X + w/2, pos.Y + h/2)
+                end
+                data.Info.Visible = Settings.ESP
+                if Settings.ESP then
+                    local dist = math.floor((Player.Character.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude)
+                    data.Info.Position = Vector2.new(pos.X, pos.Y - h/2 - 20)
+                    data.Info.Text = v.Name .. " [" .. dist .. "m]"
+                end
+            else
+                for _, l in pairs(data) do l.Visible = false end
+            end
+        else
+            for _, l in pairs(data) do l.Visible = false end
+        end
+    end
+end)
